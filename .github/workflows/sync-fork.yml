@@ -1,0 +1,32 @@
+name: Sync fork with upstream
+
+# Houdt deze fork automatisch bij met de echte FlareSolverr/FlareSolverr,
+# als voorzorg tegen het (opnieuw) verdwijnen/archiveren van het origineel
+# -- zie project_puzzelcollectie_ravensburger_backlog in het geheugen.
+# Zelfde patroon als de Rentkit-fork-sync (kalmma/rentkit).
+#
+# Bewust eenrichtingsverkeer: haalt alleen van upstream naar deze fork,
+# nooit andersom. Puzzelverzameling-saas draait zelf op het officiële,
+# gepubliceerde Docker-image (ghcr.io/flaresolverr/flaresolverr) -- deze
+# fork is puur een noodkopie van de broncode, niet iets dat live gebruikt
+# wordt, tenzij het origineel echt verdwijnt.
+"on":
+  schedule:
+    - cron: "17 3 * * *" # dagelijks 03:17, ruim genoeg voor een noodkopie
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.repository == 'kalmma/FlareSolverr'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge upstream into this fork's default branch
+        env:
+          GH_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH=$(gh api "repos/$REPO" --jq .default_branch)
+          gh api --method POST "repos/$REPO/merge-upstream" -f branch="$BRANCH"
